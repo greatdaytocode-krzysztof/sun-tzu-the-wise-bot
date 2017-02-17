@@ -1,0 +1,15 @@
+{
+  "name": "sun-tzu-the-wise-bot",
+  "version": "1.0.0",
+  "description": "Take wise words from sensei Sun-Tzu! Never wander blindly in your life again, unleash you inner karma!",
+  "scripts": {
+    "start": "heroku local"
+  },
+  "author": "Krzysztof Miaskowski",
+  "license": "MIT",
+  "dependencies": {
+    "@slack/client": "^3.8.1",
+    "meme": "^0.1.2",
+    "meme-maker": "^2.1.2"
+  }
+}
