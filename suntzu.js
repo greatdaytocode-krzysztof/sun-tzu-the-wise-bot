@@ -52,8 +52,7 @@ function becomeAllEarsToTheUnenlightened() {
                 {
                     "fallback": "Sun Tzu's inspired message should reveal itself here",
                     "color": "#36a64f",
-                    "image_url": pick(MEDITATION_IMAGES),
-                    "ts": 123456789
+                    "image_url": pick(MEDITATION_IMAGES)
                 }
             ]
         };
