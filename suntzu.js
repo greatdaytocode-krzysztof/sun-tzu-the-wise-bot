@@ -1,5 +1,4 @@
 const fs = require('fs');
-const bot_token = process.env.SLACK_BOT_TOKEN || '';
 const Botkit = require('botkit');
 
 const MEDITATION_IMAGES = [
@@ -22,14 +21,63 @@ const MEDITATION_PHRASES = [
 ];
 
 var controller = Botkit.slackbot({
-  debug: false,
-  stats_optout: true
+    json_file_store: './data/',
+    debug: false,
+    stats_optout: true
 });
 
-controller.spawn({
-  token: bot_token,
-}).startRTM()
+controller.configureSlackApp({
+   clientId: process.env.CLIENT_ID,
+   clientSecret: process.env.CLIENT_SECRET,
+   redirectUri: process.env.OAUTH_REDIRECT_URI,
+   scopes: ['bot']
+});
 
+controller.setupWebserver(process.env.PORT, (err, webserver) => {
+    controller.createOauthEndpoints(controller.webserver, (err, req, res) => { })
+});
+
+var _bots = {};
+function trackBot(bot) {
+  _bots[bot.config.token] = bot;
+}
+
+controller.on('create_bot',function(bot,config) {
+
+  if (_bots[bot.config.token]) {
+    // already online! do nothing.
+  } else {
+    bot.startRTM(function(err) {
+
+      if (!err) {
+        trackBot(bot);
+      }
+
+    });
+  }
+
+});
+
+controller.storage.teams.all(function(err,teams) {
+
+  if (err) {
+    throw new Error(err);
+  }
+
+  // connect all teams with bots up to slack!
+  for (var t  in teams) {
+    if (teams[t].bot) {
+      controller.spawn(teams[t]).startRTM(function(err, bot) {
+        if (err) {
+          console.log('Error connecting bot to Slack:',err);
+        } else {
+          trackBot(bot);
+        }
+      });
+    }
+  }
+
+});
 
 let stripsOfWisdom = readTheBookOfWisdom();
 becomeAllEarsToTheUnenlightened();
