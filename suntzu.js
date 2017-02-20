@@ -1,14 +1,8 @@
-var fs = require('fs');
-var RtmClient = require('@slack/client').RtmClient;
-var WebClient = require('@slack/client').WebClient;
-var RTM_EVENTS = require('@slack/client').RTM_EVENTS;
-var CLIENT_EVENTS = require('@slack/client').CLIENT_EVENTS;
+const fs = require('fs');
+const bot_token = process.env.SLACK_BOT_TOKEN || '';
+const Botkit = require('botkit');
 
-var bot_token = process.env.SLACK_BOT_TOKEN || '';
-var rtm = new RtmClient(bot_token);
-var web = new WebClient(bot_token);
-
-const meditationImages = [
+const MEDITATION_IMAGES = [
     'https://s31.postimg.org/eoab5zr8b/meditation_1.gif',
     'https://s27.postimg.org/51wh7x1oz/meditation_2.gif',
     'https://s7.postimg.org/56my6p24b/meditation_4.gif',
@@ -16,7 +10,7 @@ const meditationImages = [
     'https://s27.postimg.org/d1cigvur7/meditation_6.gif'
 ];
 
-const meditationPhrases = [
+const MEDITATION_PHRASES = [
     "Sun Tzu looks at the stars, wondering...",
     "Sun Tzu lifts a small rock and ponders...",
     "General's face froze thoughtfully...",
@@ -27,12 +21,17 @@ const meditationPhrases = [
     "Sun Tzu frowns in silence..."
 ];
 
-var sensei = {};
+var controller = Botkit.slackbot({
+  debug: false,
+  stats_optout: true
+});
+
+controller.spawn({
+  token: bot_token,
+}).startRTM()
+
 
 let stripsOfWisdom = readTheBookOfWisdom();
-
-proveYouAreTheRealSunTzu();
-wakeUpFromTheSpiritualMeditation();
 becomeAllEarsToTheUnenlightened();
 
 function readTheBookOfWisdom() {
@@ -42,40 +41,28 @@ function readTheBookOfWisdom() {
     return stripsOfWisdom;
 }
 
-function proveYouAreTheRealSunTzu() {
-    rtm.on(CLIENT_EVENTS.RTM.AUTHENTICATED, (rtmStartData) => {
-        let self = rtmStartData.self;
-        sensei.id = self.id;
-        sensei.name = self.name;
-        console.log(`Logged in as ${sensei.name} of team ${rtmStartData.team.name}`);
-    });
-}
-
 function becomeAllEarsToTheUnenlightened() {
-    rtm.on(RTM_EVENTS.MESSAGE, (message) => {
+    controller.hears('.*', ['direct_message', 'direct_mention', 'mention'], (bot,message) => {
         console.log('Received a message', message);
-        console.log(sensei);
-        if ('bot_message' === message.subtype || 'message_changed' === message.subtype) {
-            // Ignore the message if it comes from Sun Tzu itself
-            return;
-        }
 
         let troubleInQuestion = message;
         let meditatingMessage = {
+           "text": pick(MEDITATION_PHRASES),
             "attachments": [
                 {
                     "fallback": "Sun Tzu's inspired message should reveal itself here",
-                    "title": pick(meditationPhrases),
                     "color": "#36a64f",
-                    "image_url": pick(meditationImages),
+                    "image_url": pick(MEDITATION_IMAGES),
                     "ts": 123456789
                 }
             ]
         };
-        web.chat.postMessage(troubleInQuestion.channel, "", meditatingMessage, (err, data) => {
+
+        bot.replyAndUpdate(message, meditatingMessage, (err, sentMessage, updateCb) => {
+            let inspiredReply = seekForAComfortingPieceOfWisdom(troubleInQuestion.text);
+
             setTimeout(() => {
-                let inspiredReply = seekForAComfortingPieceOfWisdom(troubleInQuestion.text);
-                web.chat.update(data.ts, data.channel, '', {
+                updateCb({
                     attachments: [
                         {
                             "fallback": "Sun Tzu's inspired message should reveal itself here",
@@ -88,10 +75,6 @@ function becomeAllEarsToTheUnenlightened() {
             }, 8000);
         });
     });
-}
-
-function wakeUpFromTheSpiritualMeditation() {
-    rtm.start();
 }
 
 function seekForAComfortingPieceOfWisdom(troubleInQuestion) {
