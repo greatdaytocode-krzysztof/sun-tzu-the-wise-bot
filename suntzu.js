@@ -53,40 +53,46 @@ function proveYouAreTheRealSunTzu() {
 
 function becomeAllEarsToTheUnenlightened() {
     rtm.on(RTM_EVENTS.MESSAGE, (message) => {
-        console.log('Received a message', message);
-        console.log(sensei);
+
         if ('bot_message' === message.subtype || 'message_changed' === message.subtype) {
             // Ignore the message if it comes from Sun Tzu itself
             return;
         }
 
-        let troubleInQuestion = message;
-        let meditatingMessage = {
-            "attachments": [
-                {
-                    "fallback": "Sun Tzu's inspired message should reveal itself here",
-                    "title": pick(meditationPhrases),
-                    "color": "#36a64f",
-                    "image_url": pick(meditationImages),
-                    "ts": 123456789
-                }
-            ]
-        };
-        web.chat.postMessage(troubleInQuestion.channel, "", meditatingMessage, (err, data) => {
-            setTimeout(() => {
-                let inspiredReply = seekForAComfortingPieceOfWisdom(troubleInQuestion.text);
-                web.chat.update(data.ts, data.channel, '', {
-                    attachments: [
-                        {
-                            "fallback": "Sun Tzu's inspired message should reveal itself here",
-                            "text": inspiredReply,
-                            "color": "#36a64f",
-                            "footer": "Sun Tzu, The Art of War",
-                        }
-                    ]
-                });
-            }, 8000);
-        });
+        meditate(message, honorYourAudienceWithAWiseSentence);
+    });
+}
+
+function meditate(message, callback) {
+    let meditatingMessage = {
+        "attachments": [
+            {
+                "fallback": "Sun Tzu's inspired message should reveal itself here",
+                "title": pick(meditationPhrases),
+                "color": "#36a64f",
+                "image_url": pick(meditationImages),
+                "ts": 123456789
+            }
+        ]
+    };
+
+    web.chat.postMessage(message.channel, "", meditatingMessage, (err, data) => {
+        setTimeout(() => callback(data), 8000);
+    });
+
+}
+
+function honorYourAudienceWithAWiseSentence(data) {
+    let inspiredReply = seekForAComfortingPieceOfWisdom();
+    web.chat.update(data.ts, data.channel, '', {
+        attachments: [
+            {
+                "fallback": "Sun Tzu's inspired message should reveal itself here",
+                "text": inspiredReply,
+                "color": "#36a64f",
+                "footer": "Sun Tzu, The Art of War",
+            }
+        ]
     });
 }
 
@@ -94,8 +100,7 @@ function wakeUpFromTheSpiritualMeditation() {
     rtm.start();
 }
 
-function seekForAComfortingPieceOfWisdom(troubleInQuestion) {
-    console.log(troubleInQuestion);
+function seekForAComfortingPieceOfWisdom() {
     let sunTzuReply = pick(stripsOfWisdom).trim();
     return `"${sunTzuReply}"`;
 }
