@@ -21,7 +21,7 @@ const MEDITATION_PHRASES = [
 ];
 
 var controller = Botkit.slackbot({
-    json_file_store: './data/',
+    json_file_store: './.data/',
     debug: false,
     stats_optout: true
 });
@@ -39,44 +39,36 @@ controller.setupWebserver(process.env.PORT, (err, webserver) => {
 
 var _bots = {};
 function trackBot(bot) {
-  _bots[bot.config.token] = bot;
+    _bots[bot.config.token] = bot;
 }
 
-controller.on('create_bot',function(bot,config) {
+// Triggered when you finish OAuth process
+controller.on('create_bot', (bot, config) => {
 
-  if (_bots[bot.config.token]) {
-    // already online! do nothing.
-  } else {
+    // Avoid opening a RTM connection twice for the same bot
+    if (_bots[bot.config.token]) {
+        return;
+    }
+
     bot.startRTM(function(err) {
-
-      if (!err) {
-        trackBot(bot);
-      }
-
+        if (!err) {
+          trackBot(bot);
+        }
     });
-  }
 
 });
 
-controller.storage.teams.all(function(err,teams) {
-
-  if (err) {
-    throw new Error(err);
-  }
-
-  // connect all teams with bots up to slack!
-  for (var t  in teams) {
-    if (teams[t].bot) {
-      controller.spawn(teams[t]).startRTM(function(err, bot) {
-        if (err) {
-          console.log('Error connecting bot to Slack:',err);
-        } else {
-          trackBot(bot);
+// Connects to previously authenticated bots on app startup
+controller.storage.teams.all((err, teams) => {
+    for (var t in teams) {
+        if (teams[t].bot) {
+            controller.spawn(teams[t]).startRTM((err, bot) => {
+                if (!err) {
+                    trackBot(bot);
+                }
+            });
         }
-      });
     }
-  }
-
 });
 
 let stripsOfWisdom = readTheBookOfWisdom();
